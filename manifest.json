@@ -1,0 +1,42 @@
+{
+    "manifest_version": 3,
+    "name": "Advanced Text Finder",
+    "version": "1.0",
+    "description": "Find text on the page with advanced features",
+    "permissions": ["activeTab", "scripting"],
+    "background": {
+      "service_worker": "background.js"
+    },
+    "content_scripts": [
+      {
+        "matches": ["<all_urls>"],
+        "js": [
+          "/scripts/search.js",
+          "/scripts/highlight.js",
+          "/content.js"
+        ],
+        "css": ["/styles/content-styles.css"]
+      }
+    ],
+    "action": {
+      "default_popup": "/popup/popup.html",
+      "default_icon": {
+        "16": "assets/icon16.png",
+        "48": "assets/icon48.png",
+        "128": "assets/icon128.png"
+      }
+    },
+    "commands": {
+      "_execute_action": {
+        "suggested_key": {
+          "default": "Ctrl+Shift+F"
+        },
+        "description": "Activate Advanced Text Finder"
+      }
+    },
+    "icons": {
+      "16": "assets/icon16.png",
+      "48": "assets/icon48.png",
+      "128": "assets/icon128.png"
+    }
+  }

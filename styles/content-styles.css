@@ -1,0 +1,14 @@
+.atf-highlight {
+    background-color: yellow;
+    border-radius: 2px;
+  }
+  
+  .atf-current-highlight {
+    background-color: orange;
+    color: purple;
+    border-radius: 2px;
+  }
+  
+  #atf-search-interface {
+    /* Styles for the search interface */
+  }

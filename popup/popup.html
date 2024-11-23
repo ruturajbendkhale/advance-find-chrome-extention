@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Text Finder</title>
+    <link rel="stylesheet" href="/popup/popup.css">
+</head>
+<body>
+    <div class="container">
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Search text...">
+            <div class="navigation">
+                <button id="prevMatch">↑</button>
+                <button id="nextMatch">↓</button>
+            </div>
+            <span id="matchCount">0/0</span>
+        </div>
+        <div class="options">
+            <label><input type="checkbox" id="matchCase"> Match Case</label>
+            <label><input type="checkbox" id="wholeWord"> Whole Word</label>
+        </div>
+    </div>
+    <script src="/popup/popup.js"></script>
+</body>
+</html>

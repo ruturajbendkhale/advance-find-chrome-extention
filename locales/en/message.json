@@ -1,0 +1,10 @@
+{
+    "extensionName": {
+      "message": "Advanced Text Finder",
+      "description": "The name of the extension"
+    },
+    "extensionDescription": {
+      "message": "Find text on the page with advanced features",
+      "description": "The description of the extension"
+    }
+  }
