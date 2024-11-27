@@ -3,10 +3,7 @@
     "name": "Advanced Text Finder",
     "version": "1.0",
     "description": "Find text on the page with advanced features",
-    "permissions": ["activeTab", "scripting"],
-    "background": {
-      "service_worker": "background.js"
-    },
+    "permissions": ["activeTab", "scripting", "webNavigation"],
     "content_scripts": [
       {
         "matches": ["<all_urls>"],
@@ -19,12 +16,7 @@
       }
     ],
     "action": {
-      "default_popup": "/popup/popup.html",
-      "default_icon": {
-        "16": "assets/icon16.png",
-        "48": "assets/icon48.png",
-        "128": "assets/icon128.png"
-      }
+      "default_popup": "/popup/popup.html"
     },
     "commands": {
       "_execute_action": {
@@ -33,10 +25,5 @@
         },
         "description": "Activate Advanced Text Finder"
       }
-    },
-    "icons": {
-      "16": "assets/icon16.png",
-      "48": "assets/icon48.png",
-      "128": "assets/icon128.png"
     }
-  }
+}
