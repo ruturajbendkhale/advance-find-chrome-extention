@@ -1,23 +1,7 @@
 chrome.commands.onCommand.addListener((command) => {
-    if (command === "_execute_action") {
+    if (command === "toggle_floating_widget") {
         chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-            chrome.scripting.executeScript({
-                target: { tabId: tabs[0].id },
-                files: ['content.js']
-            }).then(() => {
-                chrome.tabs.sendMessage(tabs[0].id, {action: "activateTextFinder"});
-            });
-        });
-    }
-});
-
-// Handle keyboard shortcuts
-chrome.commands.onCommand.addListener((command) => {
-    if (command === 'toggle_floating_widget') {
-        chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-            chrome.tabs.sendMessage(tabs[0].id, {
-                action: "toggleFloatingWidget"
-            });
+            chrome.tabs.sendMessage(tabs[0].id, {action: "toggleFloatingWidget"});
         });
     }
 });

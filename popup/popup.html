@@ -1,62 +1,72 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Text Finder</title>
     <link rel="stylesheet" href="popup.css">
 </head>
 <body>
+    <div class="header">
+        <h1>Advanced Text Finder</h1>
+        <div class="keyboard-shortcut">
+            <span>Ctrl+Shift+Q</span>
+        </div>
+    </div>
+    
     <div class="search-container">
         <div class="search-input-container">
-            <input type="text" id="searchInput" placeholder="Search text..." autocomplete="off">
+            <input type="text" id="searchInput" placeholder="Enter text to search..." autofocus>
+            <div class="search-buttons">
+                <button id="clearBtn" class="clear-btn" title="Clear search">×</button>
+                <button id="searchBtn" class="search-btn" title="Search">🔍</button>
+            </div>
         </div>
-        
-        <div class="options-container">
+    </div>
+    
+    <div class="options-container">
+        <div class="option-group">
             <label class="checkbox-label">
                 <input type="checkbox" id="matchCase">
                 <span class="checkmark"></span>
                 Match case
             </label>
+        </div>
+        <div class="option-group">
             <label class="checkbox-label">
                 <input type="checkbox" id="wholeWord">
                 <span class="checkmark"></span>
                 Whole word
             </label>
         </div>
-        
-        <div class="results-container">
-            <div class="match-info">
-                <span id="matchCount">0/0</span>
-                <div class="detailed-counts">
-                    <span id="visibleCount" class="count-item">0 visible</span>
-                    <span id="hiddenCount" class="count-item hidden-indicator">0 hidden</span>
-                    <span id="expandableCount" class="count-item expandable-indicator">0 expandable</span>
-                </div>
-            </div>
-            
-            <div class="navigation-container">
-                <button id="prevMatch" title="Previous match (Ctrl+↑)">
-                    <svg width="12" height="12" viewBox="0 0 12 12">
-                        <path d="M8 10L4 6l4-4" stroke="currentColor" stroke-width="2" fill="none"/>
-                    </svg>
-                </button>
-                <button id="nextMatch" title="Next match (Ctrl+↓ or Enter)">
-                    <svg width="12" height="12" viewBox="0 0 12 12">
-                        <path d="M4 2l4 4-4 4" stroke="currentColor" stroke-width="2" fill="none"/>
-                    </svg>
-                </button>
-                <button id="expandAll" title="Expand all dropdowns/menus with hidden matches">
-                    <svg width="12" height="12" viewBox="0 0 12 12">
-                        <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="2" fill="none"/>
-                    </svg>
-                    Expand All
-                </button>
+    </div>
+    
+    <div class="results-container">
+        <div class="results-info">
+            <span id="visibleCount">0</span> visible
+            <span class="separator">•</span>
+            <span id="hiddenCount">0</span> hidden
+            <span class="separator">•</span>
+            <span id="triggerCount">0</span> triggers
+        </div>
+        <div class="navigation-buttons">
+            <button id="prevBtn" class="nav-btn" title="Previous match">◀</button>
+            <button id="nextBtn" class="nav-btn" title="Next match">▶</button>
+        </div>
+    </div>
+    
+    <div class="floating-widget-section">
+        <div class="section-header">
+            <span>Floating Widget</span>
+            <div class="keyboard-shortcut">
+                <span>Ctrl+Shift+M</span>
             </div>
         </div>
-        
-        <div class="help-text">
-            <small>
-                Press <strong>Enter</strong> for next • <strong>Ctrl+↑/↓</strong> to navigate<br>
-                Orange badges show hidden matches in collapsed elements
-            </small>
+        <button id="toggleFloatingWidget" class="toggle-floating-btn">
+            Show Floating Widget
+        </button>
+        <div class="floating-widget-info">
+            <small>The floating widget stays open while you interact with the page</small>
         </div>
     </div>
     

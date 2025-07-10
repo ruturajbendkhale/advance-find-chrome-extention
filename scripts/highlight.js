@@ -1,13 +1,14 @@
 window.currentHighlightIndex = -1;
 window.currentHighlights = [];
 window.hiddenMatches = [];
-window.expandableElements = [];
+window.clickableTriggers = [];
+window.isReSearching = false; // Flag to prevent recursive searches
 
 function highlightMatches(searchResults, searchText) {
     clearHighlights();
     
     if (!searchResults || (!searchResults.visible && !searchResults.length)) {
-        return { visible: 0, hidden: 0, expandable: 0 };
+        return { visible: 0, hidden: 0, triggers: 0 };
     }
 
     console.log('Highlighting matches for:', searchText);
@@ -15,11 +16,11 @@ function highlightMatches(searchResults, searchText) {
     // Handle backward compatibility - if searchResults is an array, treat as visible results
     let visibleResults = Array.isArray(searchResults) ? searchResults : searchResults.visible || [];
     let hiddenResults = Array.isArray(searchResults) ? [] : searchResults.hidden || [];
-    let expandableElements = Array.isArray(searchResults) ? [] : searchResults.expandableElements || [];
+    let clickableTriggers = Array.isArray(searchResults) ? [] : searchResults.clickableTriggers || [];
 
-    // Store hidden matches and expandable elements globally
+    // Store hidden matches and clickable triggers globally
     window.hiddenMatches = hiddenResults;
-    window.expandableElements = expandableElements;
+    window.clickableTriggers = clickableTriggers;
 
     let totalVisibleHighlights = 0;
 
@@ -32,11 +33,10 @@ function highlightMatches(searchResults, searchText) {
         });
     }
 
-    // Add indicators for expandable elements with hidden matches
-    expandableElements.forEach(element => {
-        const hiddenCount = getHiddenMatchCount(element, hiddenResults);
+    // Add indicators to clickable triggers (not hidden containers)
+    clickableTriggers.forEach(({ element, hiddenCount }) => {
         if (hiddenCount > 0) {
-            addHiddenMatchIndicator(element, hiddenCount, searchText);
+            addTriggerIndicator(element, hiddenCount, searchText);
         }
     });
 
@@ -44,7 +44,7 @@ function highlightMatches(searchResults, searchText) {
     window.currentHighlights.reverse();
 
     console.log('Total visible highlights:', totalVisibleHighlights);
-    console.log('Hidden matches in', expandableElements.length, 'expandable elements');
+    console.log('Clickable triggers with indicators:', clickableTriggers.length);
 
     if (window.currentHighlights.length > 0) {
         updateCurrentHighlight(0);
@@ -53,8 +53,201 @@ function highlightMatches(searchResults, searchText) {
     return {
         visible: totalVisibleHighlights,
         hidden: hiddenResults.reduce((sum, result) => sum + result.indices.length, 0),
-        expandable: expandableElements.length
+        triggers: clickableTriggers.length
     };
+}
+
+function addTriggerIndicator(triggerElement, hiddenCount, searchText) {
+    // Remove any existing indicator
+    const existingIndicator = triggerElement.querySelector('.atf-trigger-indicator');
+    if (existingIndicator) {
+        existingIndicator.remove();
+    }
+
+    // Check if this trigger already has our event listener to prevent duplicates
+    if (triggerElement.hasAttribute('data-atf-trigger-attached')) {
+        console.log('Trigger already has event listener, skipping...');
+        
+        // Just update the indicator, don't add new listeners
+        const indicator = document.createElement('div');
+        indicator.className = 'atf-trigger-indicator';
+        indicator.innerHTML = `
+            <div class="atf-trigger-badge">
+                <span class="atf-trigger-count">${hiddenCount}</span>
+                <span class="atf-trigger-text">hidden</span>
+            </div>
+            <div class="atf-trigger-hint">Click to reveal matches</div>
+        `;
+        
+        positionIndicatorOnTrigger(indicator, triggerElement);
+        triggerElement.appendChild(indicator);
+        return;
+    }
+
+    // Create a prominent indicator that overlays on the trigger
+    const indicator = document.createElement('div');
+    indicator.className = 'atf-trigger-indicator';
+    indicator.innerHTML = `
+        <div class="atf-trigger-badge">
+            <span class="atf-trigger-count">${hiddenCount}</span>
+            <span class="atf-trigger-text">hidden</span>
+        </div>
+        <div class="atf-trigger-hint">Click to reveal matches</div>
+    `;
+    
+    // Position indicator strategically on the trigger
+    positionIndicatorOnTrigger(indicator, triggerElement);
+    
+    // Add click handler to the trigger (not the indicator) - ONLY ONCE
+    const triggerClickHandler = function(e) {
+        // Prevent recursive searching
+        if (window.isReSearching) {
+            console.log('🚫 Already re-searching, ignoring click');
+            return;
+        }
+        
+        console.log('🎯 Trigger clicked:', triggerElement.tagName, triggerElement.className || triggerElement.id || 'no-id');
+        console.log('🔄 Starting re-search process...');
+        window.isReSearching = true;
+        
+        // Wait for the content to expand, then re-search
+        setTimeout(() => {
+            if (window.performSearch && window.highlightMatches) {
+                const currentSearch = document.querySelector('#searchInput, #atf-widget-search');
+                if (currentSearch && currentSearch.value) {
+                    console.log('🔍 Re-searching for:', currentSearch.value);
+                    const options = {
+                        matchCase: document.querySelector('#matchCase, #atf-widget-match-case')?.checked || false,
+                        wholeWord: document.querySelector('#wholeWord, #atf-widget-whole-word')?.checked || false
+                    };
+                    
+                    const searchResults = window.performSearch(currentSearch.value, options);
+                    const highlightResults = window.highlightMatches(searchResults, currentSearch.value);
+                    console.log('✅ Re-search completed. Results:', highlightResults);
+                    
+                    // Update floating widget display if it's visible
+                    if (window.floatingWidget && window.floatingWidget.isVisible) {
+                        console.log('📱 Updating floating widget display...');
+                        window.floatingWidget.updateMatchDisplay({
+                            visibleCount: highlightResults.visible || 0,
+                            hiddenCount: highlightResults.hidden || 0,
+                            triggerCount: highlightResults.triggers || 0
+                        });
+                    }
+                    
+                } else {
+                    console.log('❌ No search input found or empty value');
+                }
+            } else {
+                console.log('❌ Search functions not available');
+            }
+            
+            // Reset the flag after re-search is complete
+            setTimeout(() => {
+                window.isReSearching = false;
+                console.log('🔓 Re-search flag reset - ready for new clicks');
+            }, 100);
+        }, 300);
+    };
+    
+    // Store the handler reference and mark this trigger as having our listener
+    triggerElement._atfClickHandler = triggerClickHandler;
+    triggerElement.setAttribute('data-atf-trigger-attached', 'true');
+    triggerElement.addEventListener('click', triggerClickHandler);
+    
+    // Add hover effects
+    indicator.addEventListener('mouseenter', () => {
+        triggerElement.style.boxShadow = '0 0 8px rgba(255, 102, 0, 0.5)';
+        triggerElement.style.transform = 'scale(1.02)';
+        triggerElement.style.transition = 'all 0.2s ease';
+    });
+    
+    indicator.addEventListener('mouseleave', () => {
+        triggerElement.style.boxShadow = '';
+        triggerElement.style.transform = '';
+    });
+    
+    triggerElement.appendChild(indicator);
+}
+
+function positionIndicatorOnTrigger(indicator, triggerElement) {
+    // Get trigger dimensions and positioning
+    const rect = triggerElement.getBoundingClientRect();
+    const triggerStyle = window.getComputedStyle(triggerElement);
+    
+    // Make sure trigger has relative positioning for absolute children
+    if (triggerStyle.position === 'static') {
+        triggerElement.style.position = 'relative';
+    }
+    
+    // Position based on trigger size and type
+    let position = 'top-right'; // default
+    
+    // For small triggers (like icons or small buttons), overlay more prominently
+    if (rect.width < 60 || rect.height < 30) {
+        position = 'overlay-center';
+    }
+    // For wide triggers (like accordion headers), position at the end
+    else if (rect.width > 200) {
+        position = 'center-right';
+    }
+    
+    // Apply positioning styles
+    indicator.style.cssText = getIndicatorPositionCSS(position);
+}
+
+function getIndicatorPositionCSS(position) {
+    const baseCSS = `
+        position: absolute;
+        z-index: 10001;
+        pointer-events: none;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 11px;
+        font-weight: bold;
+        border-radius: 8px;
+        animation: atf-trigger-glow 2s infinite;
+        opacity: 0.3;
+        transition: opacity 0.2s ease;
+    `;
+    
+    switch (position) {
+        case 'overlay-center':
+            return baseCSS + `
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(255, 102, 0, 0.3);
+                color: white;
+                padding: 4px 8px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+                backdrop-filter: blur(2px);
+            `;
+        
+        case 'center-right':
+            return baseCSS + `
+                top: 50%;
+                right: 8px;
+                transform: translateY(-50%);
+                background: rgba(255, 102, 0, 0.3);
+                color: white;
+                padding: 3px 6px;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+                backdrop-filter: blur(2px);
+            `;
+        
+        case 'top-right':
+        default:
+            return baseCSS + `
+                top: -6px;
+                right: -6px;
+                background: rgba(255, 102, 0, 0.3);
+                color: white;
+                padding: 3px 6px;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+                border: 2px solid rgba(255, 255, 255, 0.3);
+                backdrop-filter: blur(2px);
+            `;
+    }
 }
 
 function highlightTextNode(node, indices, originalText, searchText, isHidden = false) {
@@ -108,120 +301,6 @@ function highlightTextNode(node, indices, originalText, searchText, isHidden = f
     return highlightCount;
 }
 
-function getHiddenMatchCount(expandableElement, hiddenResults) {
-    let count = 0;
-    hiddenResults.forEach(result => {
-        if (expandableElement.contains(result.node)) {
-            count += result.indices.length;
-        }
-    });
-    return count;
-}
-
-function addHiddenMatchIndicator(element, hiddenCount, searchText) {
-    // Check if indicator already exists
-    const existingIndicator = element.querySelector('.atf-hidden-indicator');
-    if (existingIndicator) {
-        existingIndicator.remove();
-    }
-
-    // Create indicator element
-    const indicator = document.createElement('div');
-    indicator.className = 'atf-hidden-indicator';
-    indicator.innerHTML = `
-        <span class="atf-indicator-badge">${hiddenCount}</span>
-        <span class="atf-indicator-text">hidden matches</span>
-        <button class="atf-expand-btn" title="Click to expand and reveal hidden matches">
-            <svg width="12" height="12" viewBox="0 0 12 12">
-                <path d="M6 9L1 4h10L6 9z" fill="currentColor"/>
-            </svg>
-        </button>
-    `;
-    
-    // Position indicator
-    indicator.style.cssText = `
-        position: absolute;
-        top: -8px;
-        right: -8px;
-        z-index: 10000;
-        background: #ff6600;
-        color: white;
-        padding: 2px 6px;
-        border-radius: 12px;
-        font-size: 11px;
-        font-weight: bold;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        white-space: nowrap;
-    `;
-
-    // Make sure the parent element has relative positioning
-    const parentStyle = window.getComputedStyle(element);
-    if (parentStyle.position === 'static') {
-        element.style.position = 'relative';
-    }
-
-    // Add click handler to expand element
-    const expandBtn = indicator.querySelector('.atf-expand-btn');
-    expandBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        expandElement(element, searchText);
-    });
-
-    element.appendChild(indicator);
-}
-
-function expandElement(element, searchText) {
-    console.log('Attempting to expand element:', element);
-    
-    // Try different expansion methods
-    try {
-        // Method 1: Click the element if it's clickable
-        if (element.tagName === 'DETAILS') {
-            element.open = true;
-        } else if (element.getAttribute('aria-expanded') === 'false') {
-            element.setAttribute('aria-expanded', 'true');
-            element.click();
-        } else if (element.hasAttribute('data-toggle') || element.hasAttribute('data-bs-toggle')) {
-            element.click();
-        } else {
-            // Generic click attempt
-            element.click();
-        }
-
-        // Wait a moment then re-search to highlight newly visible content
-        setTimeout(() => {
-            const hiddenMatches = window.hiddenMatches.filter(result => 
-                element.contains(result.node) && isElementVisible(result.node)
-            );
-            
-            if (hiddenMatches.length > 0) {
-                console.log('Found', hiddenMatches.length, 'newly visible matches after expansion');
-                hiddenMatches.forEach(({ node, indices, originalText }) => {
-                    highlightTextNode(node, indices, originalText, searchText, false);
-                });
-                
-                // Update the indicator
-                const indicator = element.querySelector('.atf-hidden-indicator');
-                if (indicator) {
-                    const remainingHidden = getHiddenMatchCount(element, window.hiddenMatches);
-                    if (remainingHidden === 0) {
-                        indicator.remove();
-                    } else {
-                        const badge = indicator.querySelector('.atf-indicator-badge');
-                        badge.textContent = remainingHidden;
-                    }
-                }
-            }
-        }, 200);
-        
-    } catch (error) {
-        console.error('Error expanding element:', error);
-    }
-}
-
 function clearHighlights() {
     console.log('Clearing', window.currentHighlights.length, 'highlights');
     
@@ -233,15 +312,35 @@ function clearHighlights() {
         }
     });
     
-    // Remove hidden match indicators
-    document.querySelectorAll('.atf-hidden-indicator').forEach(indicator => {
+    // Remove trigger indicators and clean up event listeners
+    document.querySelectorAll('.atf-trigger-indicator').forEach(indicator => {
         indicator.remove();
     });
+    
+    // Clean up trigger event listeners and attributes
+    document.querySelectorAll('[data-atf-trigger-attached]').forEach(trigger => {
+        // Remove our event listener if it exists
+        if (trigger._atfClickHandler) {
+            trigger.removeEventListener('click', trigger._atfClickHandler);
+            delete trigger._atfClickHandler;
+        }
+        
+        // Remove our attribute
+        trigger.removeAttribute('data-atf-trigger-attached');
+        
+        // Reset any styling we applied
+        trigger.style.boxShadow = '';
+        trigger.style.transform = '';
+        trigger.style.transition = '';
+    });
+    
+    // Reset the re-searching flag
+    window.isReSearching = false;
     
     // Clean up arrays
     window.currentHighlights = [];
     window.hiddenMatches = [];
-    window.expandableElements = [];
+    window.clickableTriggers = [];
     window.currentHighlightIndex = -1;
     
     // Normalize text nodes that might have been split
@@ -290,40 +389,7 @@ function updateCurrentHighlight(index) {
     }
 }
 
-// Import isElementVisible function for expansion checking
-function isElementVisible(node) {
-    let element = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
-    
-    while (element && element !== document.body) {
-        const style = window.getComputedStyle(element);
-        
-        if (style.display === 'none' ||
-            style.visibility === 'hidden' ||
-            style.opacity === '0' ||
-            element.hidden ||
-            element.getAttribute('aria-hidden') === 'true') {
-            return false;
-        }
-        
-        if (element.getAttribute('aria-expanded') === 'false' ||
-            element.classList.contains('collapsed') ||
-            element.classList.contains('closed')) {
-            return false;
-        }
-        
-        const rect = element.getBoundingClientRect();
-        if (rect.width === 0 && rect.height === 0) {
-            return false;
-        }
-        
-        element = element.parentElement;
-    }
-    
-    return true;
-}
-
 // Make functions available globally
 window.highlightMatches = highlightMatches;
 window.clearHighlights = clearHighlights;
 window.updateCurrentHighlight = updateCurrentHighlight;
-window.expandElement = expandElement;

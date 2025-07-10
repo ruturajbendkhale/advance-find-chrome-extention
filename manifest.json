@@ -16,17 +16,7 @@
         "css": ["/styles/content-styles.css"]
       }
     ],
-    "action": {
-      "default_popup": "/popup/popup.html"
-    },
     "commands": {
-      "_execute_action": {
-        "suggested_key": {
-          "default": "Ctrl+Shift+Q",
-          "mac": "Command+Shift+Q"
-        },
-        "description": "Open Advanced Text Finder Popup"
-      },
       "toggle_floating_widget": {
         "suggested_key": {
           "default": "Ctrl+Shift+M",
