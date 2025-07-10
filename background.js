@@ -11,6 +11,17 @@ chrome.commands.onCommand.addListener((command) => {
     }
 });
 
+// Handle keyboard shortcuts
+chrome.commands.onCommand.addListener((command) => {
+    if (command === 'toggle_floating_widget') {
+        chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+            chrome.tabs.sendMessage(tabs[0].id, {
+                action: "toggleFloatingWidget"
+            });
+        });
+    }
+});
+
 // Handle installation
 chrome.runtime.onInstalled.addListener(() => {
     // Initialize extension

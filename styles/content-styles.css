@@ -1,14 +1,168 @@
 .atf-highlight {
-    background-color: yellow;
+    background-color: #ffff00 !important;
+    color: #000000 !important;
     border-radius: 2px;
-  }
-  
-  .atf-current-highlight {
-    background-color: orange;
-    color: purple;
+    padding: 0 1px;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    position: relative;
+    z-index: 999;
+}
+
+.atf-current-highlight {
+    background-color: #ff6600 !important;
+    color: #ffffff !important;
     border-radius: 2px;
-  }
-  
-  #atf-search-interface {
+    padding: 0 1px;
+    box-shadow: 0 0 3px rgba(255, 102, 0, 0.8);
+    font-weight: bold;
+    position: relative;
+    z-index: 1000;
+}
+
+.atf-hidden-highlight {
+    background-color: #ffcc80 !important;
+    color: #bf360c !important;
+    opacity: 0.7;
+}
+
+.atf-hidden-indicator {
+    position: absolute !important;
+    top: -8px !important;
+    right: -8px !important;
+    z-index: 10000 !important;
+    background: #ff6600 !important;
+    color: white !important;
+    padding: 2px 6px !important;
+    border-radius: 12px !important;
+    font-size: 11px !important;
+    font-weight: bold !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    white-space: nowrap !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    line-height: 1 !important;
+    border: 2px solid white !important;
+    animation: atf-indicator-pulse 2s infinite !important;
+}
+
+.atf-hidden-indicator:hover {
+    background: #e55100 !important;
+    transform: scale(1.05) !important;
+    transition: all 0.2s ease !important;
+}
+
+.atf-indicator-badge {
+    background: rgba(255, 255, 255, 0.2) !important;
+    padding: 1px 4px !important;
+    border-radius: 8px !important;
+    font-weight: bold !important;
+}
+
+.atf-indicator-text {
+    font-size: 10px !important;
+    opacity: 0.9 !important;
+}
+
+.atf-expand-btn {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border: none !important;
+    border-radius: 50% !important;
+    width: 16px !important;
+    height: 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    color: white !important;
+    transition: background 0.2s ease !important;
+}
+
+.atf-expand-btn:hover {
+    background: rgba(255, 255, 255, 0.3) !important;
+    transform: scale(1.1) !important;
+}
+
+.atf-expand-btn svg {
+    width: 10px !important;
+    height: 10px !important;
+    fill: currentColor !important;
+}
+
+@keyframes atf-indicator-pulse {
+    0% { 
+        opacity: 1; 
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 0.8; 
+        transform: scale(1.02);
+    }
+    100% { 
+        opacity: 1; 
+        transform: scale(1);
+    }
+}
+
+/* Ensure indicators are visible on various page styles */
+.atf-hidden-indicator * {
+    box-sizing: border-box !important;
+}
+
+/* Override any potential conflicts */
+[class*="atf-"] {
+    all: unset !important;
+}
+
+.atf-highlight,
+.atf-current-highlight,
+.atf-hidden-highlight {
+    all: unset !important;
+    background-color: #ffff00 !important;
+    color: #000000 !important;
+    border-radius: 2px !important;
+    padding: 0 1px !important;
+    box-decoration-break: clone !important;
+    -webkit-box-decoration-break: clone !important;
+    position: relative !important;
+    z-index: 999 !important;
+}
+
+.atf-current-highlight {
+    background-color: #ff6600 !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 3px rgba(255, 102, 0, 0.8) !important;
+    font-weight: bold !important;
+    z-index: 1000 !important;
+}
+
+.atf-hidden-indicator {
+    all: unset !important;
+    position: absolute !important;
+    top: -8px !important;
+    right: -8px !important;
+    z-index: 10000 !important;
+    background: #ff6600 !important;
+    color: white !important;
+    padding: 2px 6px !important;
+    border-radius: 12px !important;
+    font-size: 11px !important;
+    font-weight: bold !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    white-space: nowrap !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    line-height: 1 !important;
+    border: 2px solid white !important;
+    animation: atf-indicator-pulse 2s infinite !important;
+}
+
+#atf-search-interface {
     /* Styles for the search interface */
-  }
+}

@@ -10,6 +10,7 @@
         "js": [
           "/scripts/search.js",
           "/scripts/highlight.js",
+          "/scripts/floating-widget.js",
           "/content.js"
         ],
         "css": ["/styles/content-styles.css"]
@@ -21,9 +22,17 @@
     "commands": {
       "_execute_action": {
         "suggested_key": {
-          "default": "Ctrl+Shift+F"
+          "default": "Ctrl+Shift+Q",
+          "mac": "Command+Shift+Q"
         },
-        "description": "Activate Advanced Text Finder"
+        "description": "Open Advanced Text Finder Popup"
+      },
+      "toggle_floating_widget": {
+        "suggested_key": {
+          "default": "Ctrl+Shift+M",
+          "mac": "Command+Shift+M"
+        },
+        "description": "Toggle Floating Search Widget"
       }
     }
 }

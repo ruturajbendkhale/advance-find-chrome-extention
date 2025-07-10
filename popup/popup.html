@@ -1,26 +1,65 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Text Finder</title>
-    <link rel="stylesheet" href="/popup/popup.css">
+    <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-    <div class="container">
-        <div class="search-container">
-            <input type="text" id="searchInput" placeholder="Search text...">
-            <div class="navigation">
-                <button id="prevMatch">↑</button>
-                <button id="nextMatch">↓</button>
-            </div>
-            <span id="matchCount">0/0</span>
+    <div class="search-container">
+        <div class="search-input-container">
+            <input type="text" id="searchInput" placeholder="Search text..." autocomplete="off">
         </div>
-        <div class="options">
-            <label><input type="checkbox" id="matchCase"> Match Case</label>
-            <label><input type="checkbox" id="wholeWord"> Whole Word</label>
+        
+        <div class="options-container">
+            <label class="checkbox-label">
+                <input type="checkbox" id="matchCase">
+                <span class="checkmark"></span>
+                Match case
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="wholeWord">
+                <span class="checkmark"></span>
+                Whole word
+            </label>
+        </div>
+        
+        <div class="results-container">
+            <div class="match-info">
+                <span id="matchCount">0/0</span>
+                <div class="detailed-counts">
+                    <span id="visibleCount" class="count-item">0 visible</span>
+                    <span id="hiddenCount" class="count-item hidden-indicator">0 hidden</span>
+                    <span id="expandableCount" class="count-item expandable-indicator">0 expandable</span>
+                </div>
+            </div>
+            
+            <div class="navigation-container">
+                <button id="prevMatch" title="Previous match (Ctrl+↑)">
+                    <svg width="12" height="12" viewBox="0 0 12 12">
+                        <path d="M8 10L4 6l4-4" stroke="currentColor" stroke-width="2" fill="none"/>
+                    </svg>
+                </button>
+                <button id="nextMatch" title="Next match (Ctrl+↓ or Enter)">
+                    <svg width="12" height="12" viewBox="0 0 12 12">
+                        <path d="M4 2l4 4-4 4" stroke="currentColor" stroke-width="2" fill="none"/>
+                    </svg>
+                </button>
+                <button id="expandAll" title="Expand all dropdowns/menus with hidden matches">
+                    <svg width="12" height="12" viewBox="0 0 12 12">
+                        <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="2" fill="none"/>
+                    </svg>
+                    Expand All
+                </button>
+            </div>
+        </div>
+        
+        <div class="help-text">
+            <small>
+                Press <strong>Enter</strong> for next • <strong>Ctrl+↑/↓</strong> to navigate<br>
+                Orange badges show hidden matches in collapsed elements
+            </small>
         </div>
     </div>
-    <script src="/popup/popup.js"></script>
+    
+    <script src="popup.js"></script>
 </body>
 </html>

@@ -3,8 +3,47 @@ document.addEventListener('DOMContentLoaded', () => {
     const matchCaseCheckbox = document.getElementById('matchCase');
     const wholeWordCheckbox = document.getElementById('wholeWord');
     const matchCount = document.getElementById('matchCount');
+    const visibleCount = document.getElementById('visibleCount');
+    const hiddenCount = document.getElementById('hiddenCount');
+    const expandableCount = document.getElementById('expandableCount');
+    const expandAllBtn = document.getElementById('expandAll');
 
     let debounceTimeout;
+    let currentSearchText = '';
+
+    // Function to update match count display
+    const updateMatchDisplay = (response) => {
+        if (response) {
+            // Update main counter (for backward compatibility)
+            matchCount.textContent = `${response.currentMatch || 0}/${response.matchCount || 0}`;
+            
+            // Update detailed counts
+            if (response.visibleCount !== undefined) {
+                visibleCount.textContent = `${response.visibleCount} visible`;
+                visibleCount.style.display = response.visibleCount > 0 ? 'inline' : 'none';
+            }
+            
+            if (response.hiddenCount !== undefined) {
+                hiddenCount.textContent = `${response.hiddenCount} hidden`;
+                hiddenCount.style.display = response.hiddenCount > 0 ? 'inline' : 'none';
+                
+                // Add visual emphasis for hidden matches
+                if (response.hiddenCount > 0) {
+                    hiddenCount.classList.add('has-hidden');
+                } else {
+                    hiddenCount.classList.remove('has-hidden');
+                }
+            }
+            
+            if (response.expandableCount !== undefined) {
+                expandableCount.textContent = `${response.expandableCount} expandable`;
+                expandableCount.style.display = response.expandableCount > 0 ? 'inline' : 'none';
+                
+                // Show/hide expand all button
+                expandAllBtn.style.display = response.expandableCount > 0 ? 'inline-flex' : 'none';
+            }
+        }
+    };
 
     // Function to navigate matches
     const navigateMatches = (direction) => {
@@ -13,8 +52,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 action: "navigateHighlight",
                 direction: direction
             }, (response) => {
-                if (response && response.currentMatch !== undefined) {
-                    matchCount.textContent = `${response.currentMatch}/${response.matchCount}`;
+                updateMatchDisplay(response);
+            });
+        });
+    };
+
+    // Function to expand all hidden elements
+    const expandAllElements = () => {
+        if (!currentSearchText) return;
+        
+        chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+            chrome.tabs.sendMessage(tabs[0].id, {
+                action: "expandAll",
+                searchText: currentSearchText
+            }, (response) => {
+                if (response && response.success) {
+                    console.log('Expanding all elements...');
+                    // Re-run search after a short delay to update counts
+                    setTimeout(() => {
+                        performSearch();
+                    }, 500);
+                } else {
+                    console.log('No expandable elements to expand');
                 }
             });
         });
@@ -29,18 +88,25 @@ document.addEventListener('DOMContentLoaded', () => {
         // Ctrl + Up/Down arrows for navigation
         if (e.ctrlKey) {
             if (e.key === 'ArrowUp') {
-                e.preventDefault(); // Prevent default scroll behavior
+                e.preventDefault();
                 navigateMatches(-1);
             } else if (e.key === 'ArrowDown') {
-                e.preventDefault(); // Prevent default scroll behavior
+                e.preventDefault();
                 navigateMatches(1);
             }
+        }
+        // Ctrl + E to expand all
+        if (e.ctrlKey && e.key === 'e') {
+            e.preventDefault();
+            expandAllElements();
         }
     });
 
     // Function to perform search
     const performSearch = () => {
         const searchText = searchInput.value;
+        currentSearchText = searchText;
+        
         const options = {
             matchCase: matchCaseCheckbox.checked,
             wholeWord: wholeWordCheckbox.checked
@@ -55,6 +121,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 tabs[0].url.startsWith('edge://') ||
                 tabs[0].url.startsWith('about:')) {
                 matchCount.textContent = 'N/A';
+                visibleCount.style.display = 'none';
+                hiddenCount.style.display = 'none';
+                expandableCount.style.display = 'none';
+                expandAllBtn.style.display = 'none';
                 return;
             }
 
@@ -69,11 +139,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         console.error('Runtime error:', chrome.runtime.lastError.message);
                     }
                     matchCount.textContent = 'N/A';
+                    visibleCount.style.display = 'none';
+                    hiddenCount.style.display = 'none';
+                    expandableCount.style.display = 'none';
+                    expandAllBtn.style.display = 'none';
                     return;
                 }
-                if (response && response.matchCount !== undefined) {
-                    matchCount.textContent = `${response.currentMatch}/${response.matchCount}`;
-                }
+                updateMatchDisplay(response);
             });
         });
     };
@@ -81,23 +153,29 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add event listeners
     searchInput.addEventListener('input', () => {
         clearTimeout(debounceTimeout);
-        // If the search box is empty or being modified, clear highlights immediately
-        chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-            chrome.tabs.sendMessage(tabs[0].id, {
-                action: "performSearch",
-                searchText: searchInput.value,
-                options: {
-                    matchCase: matchCaseCheckbox.checked,
-                    wholeWord: wholeWordCheckbox.checked
-                }
+        
+        // Clear highlights immediately if search box is empty
+        if (!searchInput.value) {
+            chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+                chrome.tabs.sendMessage(tabs[0].id, {
+                    action: "performSearch",
+                    searchText: "",
+                    options: {
+                        matchCase: matchCaseCheckbox.checked,
+                        wholeWord: wholeWordCheckbox.checked
+                    }
+                });
             });
-            if (!searchInput.value) {
-                matchCount.textContent = "0/0";
-            }
-        });
+            matchCount.textContent = "0/0";
+            visibleCount.style.display = 'none';
+            hiddenCount.style.display = 'none';
+            expandableCount.style.display = 'none';
+            expandAllBtn.style.display = 'none';
+            return;
+        }
         
         if (searchInput.value) {
-            debounceTimeout = setTimeout(performSearch, 300); // Debounce search
+            debounceTimeout = setTimeout(performSearch, 300);
         }
     });
 
@@ -113,23 +191,56 @@ document.addEventListener('DOMContentLoaded', () => {
         navigateMatches(1);
     });
 
-    // Focus search input when popup opens
+    // Add click handler for expand all button
+    expandAllBtn.addEventListener('click', expandAllElements);
+
+    // Focus search input when popup opens and keep it focused
     searchInput.focus();
+    
+    // Continuously keep popup focused
+    setInterval(() => {
+        if (!document.hasFocus()) {
+            searchInput.focus();
+        }
+    }, 100);
 
-    // Prevent popup from closing when clicking outside
-    window.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        window.focus();
-    });
-
-    // Prevent Escape key from closing the popup
-    window.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
+    // Prevent popup from auto-closing
+    document.addEventListener('mousedown', (e) => {
+        if (!e.target.closest('#closeButton')) {
             e.preventDefault();
             e.stopPropagation();
         }
+    }, true);
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('#closeButton')) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    }, true);
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    }, true);
+
+    // Keep popup focused
+    window.addEventListener('blur', (e) => {
+        setTimeout(() => {
+            if (document.hasFocus()) {
+                window.focus();
+            }
+        }, 0);
     });
+
+    // Prevent context menu
+    document.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+    }, true);
 
     // Create close button with proper accessibility
     const closeButton = document.createElement('button');
@@ -152,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
     closeButton.appendChild(svg);
     document.body.insertBefore(closeButton, document.body.firstChild);
 
-    // Close button click handler - only way to close the popup
+    // Close button click handler
     closeButton.addEventListener('click', (e) => {
         // Add water ripple effect
         const ripple = document.createElement('div');
