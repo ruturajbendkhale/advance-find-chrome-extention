@@ -702,10 +702,20 @@ class FloatingSearchWidget {
         // Update trigger navigation state
         this.currentTriggers = triggers;
         
-        if (direction === 1) {
-            this.currentTriggerIndex = (this.currentTriggerIndex + 1) % triggers.length;
+        // Handle initial state (-1) specially for proper wrapping
+        if (this.currentTriggerIndex === -1) {
+            if (direction === 1) {
+                this.currentTriggerIndex = 0; // Forward from initial: go to first trigger
+            } else {
+                this.currentTriggerIndex = triggers.length - 1; // Backward from initial: go to last trigger
+            }
         } else {
-            this.currentTriggerIndex = (this.currentTriggerIndex - 1 + triggers.length) % triggers.length;
+            // Normal navigation with proper wrapping
+            if (direction === 1) {
+                this.currentTriggerIndex = (this.currentTriggerIndex + 1) % triggers.length;
+            } else {
+                this.currentTriggerIndex = (this.currentTriggerIndex - 1 + triggers.length) % triggers.length;
+            }
         }
         
         const currentTrigger = triggers[this.currentTriggerIndex];
@@ -761,10 +771,10 @@ class FloatingSearchWidget {
         const prevBtn = this.widget.querySelector('#atf-widget-prev-trigger');
         const nextBtn = this.widget.querySelector('#atf-widget-next-trigger');
         
-        if (this.currentTriggers.length === 0) {
+        if (this.currentTriggers.length === 0 || this.currentTriggerIndex === -1) {
             positionDisplay.textContent = '-';
-            prevBtn.disabled = true;
-            nextBtn.disabled = true;
+            prevBtn.disabled = this.currentTriggers.length === 0;
+            nextBtn.disabled = this.currentTriggers.length === 0;
         } else {
             positionDisplay.textContent = `${this.currentTriggerIndex + 1}/${this.currentTriggers.length}`;
             prevBtn.disabled = false;
