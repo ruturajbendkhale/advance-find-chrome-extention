@@ -28,6 +28,8 @@ class FloatingSearchWidget {
         this.isDragging = false;
         this.dragOffset = { x: 0, y: 0 };
         this.debounceTimeout = null;
+        this.currentTriggerIndex = -1;
+        this.currentTriggers = [];
         
         this.createWidget();
         this.setupEventListeners();
@@ -80,8 +82,18 @@ class FloatingSearchWidget {
                     </div>
                     
                     <div class="atf-navigation-section">
-                        <button id="atf-widget-prev" class="atf-nav-btn" title="Previous match">◀</button>
-                        <button id="atf-widget-next" class="atf-nav-btn" title="Next match">▶</button>
+                        <div class="atf-nav-group">
+                            <label class="atf-nav-label">Matches:</label>
+                            <button id="atf-widget-prev" class="atf-nav-btn" title="Previous match">◀</button>
+                            <span id="atf-match-position" class="atf-position-display">-</span>
+                            <button id="atf-widget-next" class="atf-nav-btn" title="Next match">▶</button>
+                        </div>
+                        <div class="atf-nav-group">
+                            <label class="atf-nav-label">Triggers:</label>
+                            <button id="atf-widget-prev-trigger" class="atf-nav-btn atf-trigger-nav-btn" title="Previous trigger">◀</button>
+                            <span id="atf-trigger-position" class="atf-position-display">-</span>
+                            <button id="atf-widget-next-trigger" class="atf-nav-btn atf-trigger-nav-btn" title="Next trigger">▶</button>
+                        </div>
                     </div>
                 </div>
                 
@@ -311,8 +323,25 @@ class FloatingSearchWidget {
             
             .atf-navigation-section {
                 display: flex;
-                gap: 6px;
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .atf-nav-group {
+                display: flex;
+                align-items: center;
                 justify-content: center;
+                gap: 6px;
+            }
+            
+            .atf-nav-label {
+                font-size: 11px;
+                color: #5f6368;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                min-width: 55px;
+                text-align: left;
             }
             
             .atf-nav-btn {
@@ -335,6 +364,29 @@ class FloatingSearchWidget {
             .atf-nav-btn:disabled {
                 opacity: 0.5;
                 cursor: not-allowed;
+            }
+            
+            .atf-trigger-nav-btn {
+                background: #fff3cd;
+                border-color: #ffeaa7;
+                color: #856404;
+            }
+            
+            .atf-trigger-nav-btn:hover:not(:disabled) {
+                background: #fff1b3;
+                border-color: #ffd93d;
+            }
+            
+            .atf-position-display {
+                font-size: 11px;
+                color: #5f6368;
+                font-weight: 600;
+                min-width: 40px;
+                text-align: center;
+                padding: 4px 6px;
+                background: #f8f9fa;
+                border: 1px solid #dadce0;
+                border-radius: 4px;
             }
             
             .atf-help-section {
@@ -436,6 +488,18 @@ class FloatingSearchWidget {
         
         nextBtn.addEventListener('click', () => {
             this.navigateMatches(1);
+        });
+        
+        // Trigger navigation
+        const prevTriggerBtn = this.widget.querySelector('#atf-widget-prev-trigger');
+        const nextTriggerBtn = this.widget.querySelector('#atf-widget-next-trigger');
+        
+        prevTriggerBtn.addEventListener('click', () => {
+            this.navigateTriggers(-1);
+        });
+        
+        nextTriggerBtn.addEventListener('click', () => {
+            this.navigateTriggers(1);
         });
         
         // Widget controls
@@ -578,6 +642,14 @@ class FloatingSearchWidget {
         visibleCount.textContent = response.visibleCount || 0;
         hiddenCount.textContent = response.hiddenCount || 0;
         triggerCount.textContent = response.triggerCount || 0;
+        
+        // Reset trigger navigation state when new results come in
+        this.currentTriggerIndex = -1;
+        this.currentTriggers = window.clickableTriggers || [];
+        
+        // Update both position displays
+        this.updateMatchPosition();
+        this.updateTriggerPosition();
     }
 
     navigateMatches(direction) {
@@ -593,11 +665,120 @@ class FloatingSearchWidget {
             
             window.updateCurrentHighlight(currentIndex);
             
-            this.updateMatchDisplay({
-                visibleCount: totalHighlights,
-                hiddenCount: window.hiddenMatches ? window.hiddenMatches.reduce((sum, result) => sum + result.indices.length, 0) : 0,
-                triggerCount: window.clickableTriggers ? window.clickableTriggers.length : 0
+            // Update match position display
+            this.updateMatchPosition();
+            
+            console.log('📍 Navigated to match:', currentIndex + 1, 'of', totalHighlights);
+        }
+    }
+
+    updateMatchPosition() {
+        const positionDisplay = this.widget.querySelector('#atf-match-position');
+        const prevBtn = this.widget.querySelector('#atf-widget-prev');
+        const nextBtn = this.widget.querySelector('#atf-widget-next');
+        
+        if (!window.currentHighlights || window.currentHighlights.length === 0) {
+            positionDisplay.textContent = '-';
+            prevBtn.disabled = true;
+            nextBtn.disabled = true;
+        } else {
+            const currentIndex = window.currentHighlightIndex >= 0 ? window.currentHighlightIndex : 0;
+            const totalHighlights = window.currentHighlights.length;
+            positionDisplay.textContent = `${currentIndex + 1}/${totalHighlights}`;
+            prevBtn.disabled = false;
+            nextBtn.disabled = false;
+        }
+    }
+
+    navigateTriggers(direction) {
+        // Get current triggers from the global state
+        const triggers = window.clickableTriggers || [];
+        
+        if (triggers.length === 0) {
+            console.log('🎯 No triggers to navigate');
+            return;
+        }
+
+        // Update trigger navigation state
+        this.currentTriggers = triggers;
+        
+        // Handle initial state (-1) specially for proper wrapping
+        if (this.currentTriggerIndex === -1) {
+            if (direction === 1) {
+                this.currentTriggerIndex = 0; // Forward from initial: go to first trigger
+            } else {
+                this.currentTriggerIndex = triggers.length - 1; // Backward from initial: go to last trigger
+            }
+        } else {
+            // Normal navigation with proper wrapping
+            if (direction === 1) {
+                this.currentTriggerIndex = (this.currentTriggerIndex + 1) % triggers.length;
+            } else {
+                this.currentTriggerIndex = (this.currentTriggerIndex - 1 + triggers.length) % triggers.length;
+            }
+        }
+        
+        const currentTrigger = triggers[this.currentTriggerIndex];
+        
+        if (currentTrigger && currentTrigger.element) {
+            console.log('🎯 Navigating to trigger:', this.currentTriggerIndex + 1, 'of', triggers.length);
+            
+            // Clear any previous trigger highlights
+            this.clearTriggerHighlights();
+            
+            // Add highlight to current trigger
+            this.highlightCurrentTrigger(currentTrigger.element);
+            
+            // Scroll to the trigger
+            currentTrigger.element.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center',
+                inline: 'nearest'
             });
+            
+            // Update the position display
+            this.updateTriggerPosition();
+            
+            console.log('✅ Successfully navigated to trigger');
+        }
+    }
+
+    clearTriggerHighlights() {
+        // Remove any existing trigger highlights
+        document.querySelectorAll('.atf-current-trigger').forEach(el => {
+            el.classList.remove('atf-current-trigger');
+            el.style.outline = '';
+            el.style.outlineOffset = '';
+        });
+    }
+
+    highlightCurrentTrigger(triggerElement) {
+        // Add visual highlight to the current trigger
+        triggerElement.classList.add('atf-current-trigger');
+        triggerElement.style.outline = '3px solid #4285f4';
+        triggerElement.style.outlineOffset = '2px';
+        
+        // Remove highlight after a few seconds
+        setTimeout(() => {
+            triggerElement.classList.remove('atf-current-trigger');
+            triggerElement.style.outline = '';
+            triggerElement.style.outlineOffset = '';
+        }, 3000);
+    }
+
+    updateTriggerPosition() {
+        const positionDisplay = this.widget.querySelector('#atf-trigger-position');
+        const prevBtn = this.widget.querySelector('#atf-widget-prev-trigger');
+        const nextBtn = this.widget.querySelector('#atf-widget-next-trigger');
+        
+        if (this.currentTriggers.length === 0 || this.currentTriggerIndex === -1) {
+            positionDisplay.textContent = '-';
+            prevBtn.disabled = this.currentTriggers.length === 0;
+            nextBtn.disabled = this.currentTriggers.length === 0;
+        } else {
+            positionDisplay.textContent = `${this.currentTriggerIndex + 1}/${this.currentTriggers.length}`;
+            prevBtn.disabled = false;
+            nextBtn.disabled = false;
         }
     }
 
@@ -680,8 +861,17 @@ class FloatingSearchWidget {
         // Move widget off-screen
         this.widget.style.transform = 'translateX(340px)';
         
-        // Clear any active searches
+        // Clear any active searches and trigger highlights
         window.clearHighlights();
+        this.clearTriggerHighlights();
+        
+        // Reset navigation states
+        this.currentTriggerIndex = -1;
+        this.currentTriggers = [];
+        
+        // Reset position displays
+        this.updateMatchPosition();
+        this.updateTriggerPosition();
     }
 
     toggle() {
